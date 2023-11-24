@@ -46,18 +46,18 @@ export function multishot<T, TReturn, TNext>(
   generatorFn: () => Generator<T, TReturn, TNext>
 ): () => MultishotGenerator<T, TReturn, TNext> {
   function doNext(
-    generateInstance: Unique<Generator<T, TReturn, TNext>>,
+    generatorInstance: Unique<Generator<T, TReturn, TNext>>,
     latestCall: null | HistoryNode<TNext>,
     next: TNext
   ): MultishotGenerator<T, TReturn, TNext> {
     const newHistory = new HistoryNode(latestCall, next);
-    const newResult = generateInstance.value!.next(next);
+    const newResult = generatorInstance.value!.next(next);
 
     if (newResult.done === true) {
       return [newResult];
     }
 
-    return [newResult, getNext(generateInstance.transfer(), newHistory)];
+    return [newResult, getNext(generatorInstance.transfer(), newHistory)];
   }
 
   function getNext(
