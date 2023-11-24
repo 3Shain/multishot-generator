@@ -1,0 +1,28 @@
+{
+  "name": "multishot-generator",
+  "license": "MIT",
+  "author": {
+    "name": "3Shain",
+    "email": "san3shain@outlook.com"
+  },
+  "type": "module",
+  "main": "./dist/multishot-generator.cjs",
+  "module": "./dist/multishot-generator.js",
+  "typings": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/multishot-generator.cjs",
+      "import": "./dist/multishot-generator.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest",
+    "emit-type": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2",
+    "vite": "^5.0.2",
+    "vitest": "^0.34.6"
+  }
+}
