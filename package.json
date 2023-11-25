@@ -1,6 +1,6 @@
 {
   "name": "multishot-generator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "MIT",
   "author": {
     "name": "3Shain",
@@ -19,7 +19,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest",
-    "emit-type": "tsc"
+    "emit-type": "tsc && cp ./src/effects.d.ts ./dist/effects.d.ts"
   },
   "devDependencies": {
     "typescript": "^5.3.2",

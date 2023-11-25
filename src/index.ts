@@ -51,13 +51,16 @@ export function multishot<T, TReturn, TNext>(
     next: TNext
   ): MultishotGenerator<T, TReturn, TNext> {
     const newHistory = new HistoryNode(latestCall, next);
-    const newResult = generatorInstance.value!.next(next);
+    // const newResult = generatorInstance.value!.next(next);
+    const currentGenerator = generatorInstance.value;
+    const transfered = generatorInstance.transfer(); // should tranfer the ownership first
+    const newResult = currentGenerator.next(next);
 
     if (newResult.done === true) {
       return [newResult];
     }
 
-    return [newResult, getNext(generatorInstance.transfer(), newHistory)];
+    return [newResult, getNext(transfered, newHistory)];
   }
 
   function getNext(
@@ -90,3 +93,18 @@ export function multishot<T, TReturn, TNext>(
     return doNext(generatorInstance, null, undefined!);
   };
 }
+
+export function* oneshot<T, TReturn, TNext>(
+  generator: MultishotGenerator<T, TReturn, TNext>
+): Generator<T, TReturn, TNext> {
+  while (true) {
+    const [result, next] = generator;
+    if (result.done === true) {
+      return result.value;
+    } else {
+      generator = next!(yield result.value);
+    }
+  }
+}
+
+export * from "./effects";
