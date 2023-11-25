@@ -5,12 +5,10 @@ class HistoryNode<T> {
   ) {}
 }
 
-const EMPTY = Symbol.for("unique_empty");
+const EMPTY:unique symbol = {} as any; // unique reference
 
 class Unique<T> {
-  private holding = true;
-
-  constructor(private _value: T | typeof EMPTY) {}
+  constructor(private _value: T | typeof EMPTY, private holding = true) {}
 
   transfer(): Unique<T> {
     const ret = new Unique(this._value);
@@ -42,56 +40,44 @@ type MultishotGenerator<T, TReturn, TNext> =
     ]
   | [IteratorReturnResult<TReturn>];
 
+const replay: <T, TReturn, TNext>(
+  h: HistoryNode<TNext> | null,
+  gen: Generator<T, TReturn, TNext>
+) => undefined = (h, gen) =>
+  h ? (replay(h.prev, gen), gen.next(h.value), undefined) : undefined;
+
 export function multishot<T, TReturn, TNext>(
-  generatorFn: () => Generator<T, TReturn, TNext>
+  createGenerator: () => Generator<T, TReturn, TNext>
 ): () => MultishotGenerator<T, TReturn, TNext> {
-  function doNext(
+  function step(
     generatorInstance: Unique<Generator<T, TReturn, TNext>>,
-    latestCall: null | HistoryNode<TNext>,
-    next: TNext
+    latestCall: HistoryNode<TNext>
   ): MultishotGenerator<T, TReturn, TNext> {
-    const newHistory = new HistoryNode(latestCall, next);
-    // const newResult = generatorInstance.value!.next(next);
     const currentGenerator = generatorInstance.value;
     const transfered = generatorInstance.transfer(); // should tranfer the ownership first
-    const newResult = currentGenerator.next(next);
+    // now generatorInstance is empty!
+    const result = currentGenerator.next(latestCall.value);
 
-    if (newResult.done === true) {
-      return [newResult];
+    if (result.done === true) {
+      return [result];
     }
 
-    return [newResult, getNext(transfered, newHistory)];
+    return [
+      result,
+      (value) =>
+        step(
+          transfered.getOrCreate(() => {
+            const gen = createGenerator();
+            replay(latestCall, gen); // dfs: risk of stack overflow
+            return gen;
+          }),
+          new HistoryNode(latestCall, value)
+        ),
+    ];
   }
 
-  function getNext(
-    generatorInstance: Unique<Generator<T, TReturn, TNext>>,
-    latestCall: null | HistoryNode<TNext>
-  ) {
-    return function next(value: TNext): MultishotGenerator<T, TReturn, TNext> {
-      return doNext(
-        generatorInstance.getOrCreate(() => {
-          let current = latestCall;
-          let collected = [];
-          while (current !== null) {
-            collected.push(current);
-            current = current.prev;
-          }
-          const newGeneratorInstance = generatorFn();
-          while (collected.length) {
-            newGeneratorInstance.next(collected.pop()!.value);
-          }
-          return newGeneratorInstance;
-        }),
-        latestCall,
-        value
-      );
-    };
-  }
-
-  return () => {
-    const generatorInstance = new Unique(generatorFn());
-    return doNext(generatorInstance, null, undefined!);
-  };
+  return () =>
+    step(new Unique(createGenerator()), new HistoryNode(null, undefined!));
 }
 
 export function* oneshot<T, TReturn, TNext>(
