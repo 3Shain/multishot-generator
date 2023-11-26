@@ -33,7 +33,7 @@ class Unique<T> {
   }
 }
 
-type MultishotGenerator<T, TReturn, TNext> =
+export type MultishotGenerator<T, TReturn, TNext> =
   | [
       IteratorYieldResult<T>,
       next: (value: TNext) => MultishotGenerator<T, TReturn, TNext>
